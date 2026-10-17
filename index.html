@@ -14,7 +14,7 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -24,6 +24,7 @@
             sans: ['Inter', 'sans-serif'],
             display: ['Outfit', 'sans-serif'],
             arabic: ['Tajawal', 'sans-serif'],
+            handwriting: ['Caveat', 'cursive'],
           },
           colors: {
             brand: {
@@ -42,46 +43,83 @@
   <style>
     body {
       font-family: 'Tajawal', 'Inter', sans-serif;
-      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f0f9ff 100%);
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f0fdf4 100%);
       min-height: 100vh;
       color: #1e293b;
       overflow-x: hidden;
     }
     .font-brand { font-family: 'Outfit', sans-serif; }
     .font-ar { font-family: 'Tajawal', sans-serif; }
+    .font-hand { font-family: 'Caveat', cursive; }
     
-    /* Inline Karaoke Highlighting Magic */
+    /* Inline Synchronized Words */
     .k-word {
       display: inline-block;
-      transition: background-color 0.05s ease, transform 0.05s ease, color 0.05s ease;
+      transition: color 0.15s ease, transform 0.15s ease, background-color 0.15s ease, opacity 0.2s ease;
       border-radius: 4px;
-      padding: 0 2px;
+      padding: 0 1px;
       margin: 0;
+      position: relative;
     }
-    .k-word.active {
-      background-color: #fde047; /* yellow-300 */
+
+    /* Live Writing Mode (Unwritten / Currently Writing / Written) */
+    .writing-mode .k-word.unwritten {
+      opacity: 0.2;
+      filter: blur(0.6px);
+    }
+    .writing-mode .k-word.writing-active {
+      opacity: 1;
+      color: #0f766e;
+      background-color: #ccfbf1;
+      font-weight: 800;
+      transform: scale(1.08) translateY(-1px);
+      box-shadow: 0 4px 10px rgba(13, 148, 136, 0.25);
+      border-bottom: 2px solid #0D9488;
+      z-index: 10;
+    }
+    .writing-mode .k-word.writing-active::after {
+      content: '✍️';
+      position: absolute;
+      top: -18px;
+      right: -8px;
+      font-size: 15px;
+      animation: penWiggle 0.22s infinite alternate ease-in-out;
+      pointer-events: none;
+    }
+    .writing-mode .k-word.written {
+      opacity: 1;
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    /* Standard Highlight Mode */
+    .highlight-mode .k-word.active {
+      background-color: #fde047;
       color: #000000;
-      transform: scale(1.15) translateY(-2px);
+      transform: scale(1.12) translateY(-2px);
       font-weight: 800;
       box-shadow: 0 4px 10px rgba(250, 204, 21, 0.4);
       z-index: 10;
-      position: relative;
+    }
+
+    @keyframes penWiggle {
+      0% { transform: translateY(0) rotate(0deg); }
+      100% { transform: translateY(-4px) rotate(-14deg); }
     }
 
     .speakable {
       cursor: pointer;
-      transition: background-color 0.2s ease, transform 0.1s ease;
+      transition: background-color 0.2s ease;
+      white-space: normal;
+      word-spacing: normal;
     }
     .speakable:hover {
-      background-color: #fef9c3; /* yellow-50 */
-    }
-    .speakable:active {
-      transform: scale(0.98);
+      background-color: #f0fdfa;
     }
     .speakable.playing {
       border-radius: 8px;
       outline: 2px dashed #0D9488;
-      outline-offset: 2px;
+      outline-offset: 4px;
     }
 
     /* Floating decorations */
@@ -89,11 +127,11 @@
       position: absolute;
       pointer-events: none;
       z-index: 0;
-      opacity: 0.7;
+      opacity: 0.65;
     }
     @keyframes float {
-      0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
-      50% { transform: translateY(-15px) rotate(10deg) scale(1.05); }
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(8deg); }
     }
 
     /* Custom Input Select styling */
@@ -123,7 +161,7 @@
       min-width: 140px;
       height: 32px;
       border-bottom: 2px dashed #94a3b8;
-      margin: 0 8px;
+      margin: 0 6px;
       vertical-align: middle;
       cursor: pointer;
       transition: all 0.2s;
@@ -152,20 +190,19 @@
     }
   </style>
 </head>
-<body class="flex flex-col min-h-screen relative pb-24">
+<body class="flex flex-col min-h-screen relative pb-32 writing-mode" id="bodyRoot">
 
-  <!-- Floating Background Elements (Butterflies, stars) -->
+  <!-- Floating Background Elements -->
   <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
     <div class="absolute top-32 left-8 text-4xl floating-decor" style="animation: float 6s ease-in-out infinite;">🦋</div>
     <div class="absolute top-1/2 right-12 text-3xl floating-decor" style="animation: float 8s ease-in-out infinite reverse;">🦋</div>
-    <div class="absolute bottom-20 right-1/4 text-4xl floating-decor" style="animation: float 7s ease-in-out infinite;">🦋</div>
+    <div class="absolute bottom-24 right-1/4 text-4xl floating-decor" style="animation: float 7s ease-in-out infinite;">🦋</div>
     <div class="absolute top-20 right-1/4 text-yellow-400 floating-decor text-3xl">⭐</div>
-    <div class="absolute bottom-1/3 left-12 text-pink-400 floating-decor text-2xl">▲</div>
     <div class="absolute top-1/4 left-1/4 text-teal-400 floating-decor text-xl">●</div>
   </div>
 
   <!-- Top Global Bar -->
-  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
+  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
     <div class="max-w-5xl mx-auto px-4 py-3 sm:px-6 flex flex-wrap items-center justify-between gap-3">
       
       <!-- Brand & Teacher Attribution -->
@@ -181,8 +218,26 @@
         </div>
       </div>
 
-      <!-- Native Speaker Accent & Controls -->
-      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200" dir="ltr">
+      <!-- Sync Mode Selector & Native Speaker Controls -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-slate-100/95 p-1.5 rounded-2xl border border-slate-200" dir="ltr">
+        
+        <!-- Toggle Sync Type: Writing vs Highlighting -->
+        <div class="flex items-center bg-white rounded-xl p-0.5 shadow-xs border border-slate-200">
+          <button id="btnModeWriting" onclick="setSyncMode('writing')" class="px-2.5 py-1 text-xs font-bold rounded-lg bg-brand-teal text-white flex items-center gap-1 transition">
+            <span>✍️ بالكتابة</span>
+          </button>
+          <button id="btnModeHighlight" onclick="setSyncMode('highlight')" class="px-2.5 py-1 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 flex items-center gap-1 transition">
+            <span>🖍️ تظليل</span>
+          </button>
+        </div>
+
+        <!-- Pencil Writing Sound Toggle -->
+        <button id="btnSoundFX" onclick="toggleWritingSound()" class="px-2 py-1 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:text-brand-teal flex items-center gap-1 shadow-xs" title="صوت قلم الكتابة">
+          <i data-lucide="volume-2" class="w-3.5 h-3.5 text-brand-teal"></i>
+          <span class="hidden sm:inline">صوت القلم</span>
+        </button>
+
+        <!-- Accent Selection -->
         <div class="flex items-center gap-1 bg-white px-2.5 py-1 rounded-xl shadow-xs text-xs font-semibold text-slate-700">
           <i data-lucide="mic" class="w-3.5 h-3.5 text-brand-teal"></i>
           <select id="accentSelect" onchange="onAccentChange()" class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer" dir="rtl">
@@ -191,14 +246,19 @@
             <option value="en-CA">🇨🇦 كندي</option>
           </select>
         </div>
+
+        <!-- Speed -->
         <div class="flex items-center gap-1.5 bg-white px-2 py-1 rounded-xl shadow-xs text-xs">
           <span class="text-slate-500 font-ar text-[11px] font-bold" dir="rtl">السرعة</span>
           <button id="btnSpeed" onclick="cycleSpeed()" class="font-bold text-brand-teal hover:text-teal-900 px-1 py-0.5 rounded transition">0.8x</button>
         </div>
+
+        <!-- Stop -->
         <button onclick="stopAllSpeech()" class="p-1.5 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition" title="إيقاف الصوت">
           <i data-lucide="square" class="w-4 h-4 fill-current"></i>
         </button>
       </div>
+
     </div>
   </header>
 
@@ -208,8 +268,11 @@
     <div class="flex items-center gap-4 mb-4">
       <div class="bg-brand-teal text-white px-8 py-3 rounded-l-3xl rounded-r-lg shadow-md flex items-center gap-3 relative">
         <h1 class="font-brand font-black text-2xl tracking-wide">القواعد Grammar</h1>
-        <!-- Cute Alien Mascot Placeholder -->
         <span class="absolute -top-4 -left-6 text-4xl animate-bounce" style="animation-duration: 2s;">👽</span>
+      </div>
+      <div class="bg-teal-50 border border-teal-200 text-teal-800 text-xs px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5">
+        <span class="animate-pulse">✨</span>
+        <span>انقر على أي جملة لتُكتب وتُنطق مباشرة بالتزامن الحقيقي</span>
       </div>
     </div>
 
@@ -218,7 +281,6 @@
       <div class="flex items-center gap-3">
         <span class="font-brand font-black text-2xl text-brand-teal font-sans">1</span>
         <h2 class="font-brand font-bold text-xl text-slate-900">اقرأ الجدول. (Read the chart)</h2>
-        <span class="text-xs text-slate-500 font-ar mr-auto hidden sm:block">انقر على أي جملة للاستماع إليها مظللة</span>
       </div>
 
       <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mt-4" dir="ltr">
@@ -283,7 +345,6 @@
         
         <!-- Left: Match Options -->
         <div class="space-y-8">
-          <!-- Selection Boxes -->
           <div class="space-y-4 font-brand text-lg">
             <div class="flex items-center gap-4">
               <span class="font-bold w-4">1</span>
@@ -299,32 +360,30 @@
             </div>
           </div>
 
-          <!-- The List -->
+          <!-- The Options List -->
           <ul class="space-y-3 text-slate-700">
-          <li class="flex gap-3 speakable" onclick="playElementTTS(this)">
-            <span class="font-bold text-slate-900">a</span> <span>went to the youth center once in the past.</span>
-          </li>
-          <li class="flex gap-3 speakable" onclick="playElementTTS(this)">
-            <span class="font-bold text-slate-900">b</span> <span>didn't go last Thursday.</span>
-          </li>
-          <li class="flex gap-3 speakable" onclick="playElementTTS(this)">
-            <span class="font-bold text-slate-900">c</span> <span>doesn't go regularly.</span>
-          </li>
-          <li class="flex gap-3 speakable" onclick="playElementTTS(this)">
-            <span class="font-bold text-slate-900">d</span> <span>goes regularly.</span>
-          </li>
-        </ul>
+            <li class="flex gap-3 speakable p-1.5 rounded-lg" onclick="playElementTTS(this)">
+              <span class="font-bold text-slate-900">a</span> <span>went to the youth center once in the past.</span>
+            </li>
+            <li class="flex gap-3 speakable p-1.5 rounded-lg" onclick="playElementTTS(this)">
+              <span class="font-bold text-slate-900">b</span> <span>didn't go last Thursday.</span>
+            </li>
+            <li class="flex gap-3 speakable p-1.5 rounded-lg" onclick="playElementTTS(this)">
+              <span class="font-bold text-slate-900">c</span> <span>doesn't go regularly.</span>
+            </li>
+            <li class="flex gap-3 speakable p-1.5 rounded-lg" onclick="playElementTTS(this)">
+              <span class="font-bold text-slate-900">d</span> <span>goes regularly.</span>
+            </li>
+          </ul>
 
-        <button onclick="checkMatch()" class="px-6 py-2 bg-brand-teal hover:bg-teal-700 text-white font-bold rounded-xl shadow-md transition active:scale-95 flex items-center gap-2" dir="rtl">
-          <i data-lucide="check" class="w-5 h-5 ml-2"></i> تحقق من الإجابات
-        </button>
-      </div>
+          <button onclick="checkMatch()" class="px-6 py-2.5 bg-brand-teal hover:bg-teal-700 text-white font-bold rounded-xl shadow-md transition active:scale-95 flex items-center gap-2" dir="rtl">
+            <i data-lucide="check" class="w-5 h-5 ml-2"></i> تحقق من الإجابات
+          </button>
+        </div>
 
-      <!-- Right: The Park Scene -->
-      <div class="relative h-[350px] bg-gradient-to-b from-sky-200 to-green-100 rounded-3xl overflow-hidden border-4 border-white shadow-lg">
-          <!-- Grass Floor -->
+        <!-- Right: The Park Scene -->
+        <div class="relative h-[350px] bg-gradient-to-b from-sky-200 to-green-100 rounded-3xl overflow-hidden border-4 border-white shadow-lg">
           <div class="absolute bottom-0 w-full h-1/3 bg-green-400 rounded-t-[50%] scale-110"></div>
-          <!-- Path -->
           <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-1/3 bg-amber-200/80 rounded-t-full transform perspective-[100px] rotateX(45deg)"></div>
           
           <!-- Characters -->
@@ -335,27 +394,23 @@
             <div class="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full absolute -bottom-4 right-4 border-2 border-white shadow-sm scale-x-[-1]">Carter</div>
           </div>
 
-          <!-- Speech Bubbles (Speakable) -->
-          <!-- Aurora 1 -->
-          <div class="absolute top-6 left-4 bg-white p-2 rounded-xl text-[11px] font-medium shadow-md w-36 border-2 border-orange-200 speakable z-20" onclick="playElementTTS(this)">
+          <!-- Speech Bubbles (Click to watch written live & hear) -->
+          <div class="absolute top-6 left-4 bg-white p-2.5 rounded-xl text-[11px] font-medium shadow-md w-36 border-2 border-orange-200 speakable z-20" onclick="playElementTTS(this)">
             When <span class="text-brand-teal font-bold">do</span> you <span class="text-brand-teal font-bold">go</span> to the youth center, Carter?
             <div class="absolute -bottom-2 right-4 w-4 h-4 bg-white border-b-2 border-r-2 border-orange-200 transform rotate-45"></div>
           </div>
           
-          <!-- Carter 1 -->
-          <div class="absolute top-2 right-4 bg-white p-2 rounded-xl text-[11px] font-medium shadow-md w-40 border-2 border-yellow-200 speakable z-20" onclick="playElementTTS(this)">
+          <div class="absolute top-2 right-4 bg-white p-2.5 rounded-xl text-[11px] font-medium shadow-md w-40 border-2 border-yellow-200 speakable z-20" onclick="playElementTTS(this)">
             I <span class="text-brand-teal font-bold">go</span> nearly every day, Aurora, but my sister only <span class="text-brand-teal font-bold">goes</span> three days a week.
             <div class="absolute -bottom-2 left-4 w-4 h-4 bg-white border-b-2 border-r-2 border-yellow-200 transform rotate-45"></div>
           </div>
 
-          <!-- Aurora 2 -->
-          <div class="absolute top-28 left-2 bg-white p-2 rounded-xl text-[11px] font-medium shadow-md w-36 border-2 border-red-200 speakable z-20" onclick="playElementTTS(this)">
+          <div class="absolute top-28 left-2 bg-white p-2.5 rounded-xl text-[11px] font-medium shadow-md w-36 border-2 border-red-200 speakable z-20" onclick="playElementTTS(this)">
             I <span class="text-brand-teal font-bold">went</span> last Thursday. It <span class="text-brand-teal font-bold">was</span> my first time, but I <span class="text-brand-teal font-bold">didn't see</span> you.
             <div class="absolute bottom-4 -right-2 w-4 h-4 bg-white border-t-2 border-r-2 border-red-200 transform rotate-45"></div>
           </div>
 
-          <!-- Carter 2 -->
-          <div class="absolute top-24 right-2 bg-white p-2 rounded-xl text-[11px] font-medium shadow-md w-36 border-2 border-purple-200 speakable z-20" onclick="playElementTTS(this)">
+          <div class="absolute top-24 right-2 bg-white p-2.5 rounded-xl text-[11px] font-medium shadow-md w-36 border-2 border-purple-200 speakable z-20" onclick="playElementTTS(this)">
             Oh, yes. I <span class="text-brand-teal font-bold">was</span> ill, so I <span class="text-brand-teal font-bold">didn't go</span>.
             <div class="absolute bottom-6 -left-2 w-4 h-4 bg-white border-b-2 border-l-2 border-purple-200 transform rotate-45"></div>
           </div>
@@ -373,7 +428,7 @@
       <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm text-center" dir="ltr">
         
         <!-- Word Bank (Pills) -->
-        <div class="inline-flex flex-wrap justify-center gap-3 border-2 border-brand-teal rounded-full p-2 mb-8 bg-teal-50/30">
+        <div class="inline-flex flex-wrap justify-center gap-3 border-2 border-brand-teal rounded-full p-2 mb-8 bg-teal-50/40">
           <div class="word-pill px-4 py-2 bg-white border-2 border-slate-200 rounded-full font-bold text-slate-700 shadow-sm" onclick="selectPill(this)" data-word="facts or feelings">facts or feelings</div>
           <div class="word-pill px-4 py-2 bg-white border-2 border-slate-200 rounded-full font-bold text-slate-700 shadow-sm" onclick="selectPill(this)" data-word="moments or events">moments or events</div>
           <div class="word-pill px-4 py-2 bg-white border-2 border-slate-200 rounded-full font-bold text-slate-700 shadow-sm" onclick="selectPill(this)" data-word="regular routines">regular routines</div>
@@ -381,21 +436,21 @@
 
         <p class="text-sm text-slate-500 mb-4 font-ar" dir="rtl">انقر على الكلمة من الأعلى ثم انقر على الفراغ المناسب لملئه</p>
 
-        <!-- Sentences -->
-        <div class="space-y-6 text-left max-w-3xl mx-auto text-lg leading-loose text-slate-800" dir="ltr">
+        <!-- Sentences (Numbers outside speakable to skip speaking 1 and 2) -->
+        <div class="space-y-6 text-left max-w-3xl mx-auto text-lg leading-relaxed text-slate-800" dir="ltr">
           
-          <div class="flex items-start p-4 rounded-xl hover:bg-slate-50 transition cursor-pointer" onclick="playElementTTS(this.querySelector('.speakable'))">
-            <span class="font-bold mr-4 inline-block text-brand-teal text-xl mt-1 shrink-0">1</span>
-            <div class="speakable block flex-1">
+          <div class="flex items-start p-4 rounded-xl hover:bg-slate-50 transition cursor-pointer">
+            <span class="font-bold mr-4 inline-block text-brand-teal text-xl mt-1 shrink-0 select-none">1</span>
+            <div class="speakable block flex-1" onclick="playElementTTS(this)">
               We use action words in the past to talk about single 
               <span class="blank-dropzone" onclick="fillBlank(this, event)" data-answer="moments or events"></span>
               before now.
             </div>
           </div>
 
-          <div class="flex items-start p-4 rounded-xl hover:bg-slate-50 transition cursor-pointer" onclick="playElementTTS(this.querySelector('.speakable'))">
-            <span class="font-bold mr-4 inline-block text-brand-teal text-xl mt-1 shrink-0">2</span>
-            <div class="speakable block flex-1">
+          <div class="flex items-start p-4 rounded-xl hover:bg-slate-50 transition cursor-pointer">
+            <span class="font-bold mr-4 inline-block text-brand-teal text-xl mt-1 shrink-0 select-none">2</span>
+            <div class="speakable block flex-1" onclick="playElementTTS(this)">
               We use action words in the present to talk about 
               <span class="blank-dropzone" onclick="fillBlank(this, event)" data-answer="facts or feelings"></span>
               that are always true and to talk about 
@@ -405,74 +460,178 @@
 
         </div>
 
-      <div class="mt-8">
-        <button onclick="checkBlanks()" class="px-8 py-3 bg-brand-teal hover:bg-teal-700 text-white font-brand font-bold rounded-xl shadow-lg shadow-teal-500/30 transition transform active:scale-95 flex items-center justify-center gap-2 mx-auto" dir="rtl">
-          <i data-lucide="check-circle" class="w-5 h-5 ml-2"></i> تحقق من الإجابات
-        </button>
+        <div class="mt-8">
+          <button onclick="checkBlanks()" class="px-8 py-3 bg-brand-teal hover:bg-teal-700 text-white font-brand font-bold rounded-xl shadow-lg shadow-teal-500/30 transition transform active:scale-95 flex items-center justify-center gap-2 mx-auto" dir="rtl">
+            <i data-lucide="check-circle" class="w-5 h-5 ml-2"></i> تحقق من الإجابات
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Live Writing Blackboard (سبورة الكتابة التزامنية) -->
+  <aside id="liveWritingBoard" class="fixed bottom-0 left-0 w-full z-40 bg-slate-900/95 backdrop-blur-md border-t-2 border-teal-500 text-white shadow-2xl py-3 px-4 sm:px-6 transition-all duration-300">
+    <div class="max-w-5xl mx-auto space-y-2">
+      
+      <div class="flex items-center justify-between text-xs text-slate-400 font-ar" dir="rtl">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="text-emerald-300 font-bold">سبورة الكتابة التزامنية المباشرة:</span>
+          <span id="activeVoiceTag" class="text-[11px] bg-slate-800 text-teal-300 px-2 py-0.5 rounded border border-slate-700">🇺🇸 صوت أمريكي هادئ</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="toggleDictationBox()" class="text-teal-400 hover:text-teal-300 font-bold flex items-center gap-1 transition">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            <span>جرب كتابة ما سمعته</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Real-time Text Writer Stream -->
+      <div class="bg-slate-950/80 rounded-xl p-3 border border-slate-800/80 flex items-center justify-between gap-4" dir="ltr">
+        <div class="flex-1 overflow-x-auto py-1">
+          <div id="liveWrittenSentence" class="text-base sm:text-lg text-slate-200 tracking-wide font-medium flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span class="text-slate-500 italic">انقر على أي نص في الصفحة لمشاهدة كتابته وتزامنه الحي مع المتحدث...</span>
+          </div>
+        </div>
+        <div class="shrink-0 flex items-center gap-2">
+          <button onclick="replayCurrentSentence()" class="p-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white transition shadow-sm" title="إعادة الاستماع">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Dictation / Practice Writing Box (Hidden by default, expandable) -->
+      <div id="dictationContainer" class="hidden pt-2 border-t border-slate-800" dir="rtl">
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input type="text" id="dictationInput" placeholder="اكتب الجملة بالإنجليزية هنا للتدرب على الإملاء..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-brand-teal" dir="ltr">
+          <button onclick="checkDictation()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition">
+            تحقق من إملائك
+          </button>
+        </div>
+        <div id="dictationFeedback" class="text-xs mt-1.5 font-bold"></div>
       </div>
 
     </div>
-  </section>
+  </aside>
 
-</main>
-
-<!-- Footer Banner -->
-<footer class="mt-auto bg-brand-purple py-4 relative overflow-hidden" dir="ltr">
-  <div class="max-w-5xl mx-auto px-6 flex justify-between items-center relative z-10">
-    <span class="text-purple-200 font-ar text-sm" dir="rtl">المعلم ماجد السويهري</span>
-    <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border-2 border-white/30 text-white font-black text-3xl font-brand">
-      12
+  <!-- Footer Banner -->
+  <footer class="mt-auto bg-brand-purple py-4 relative overflow-hidden" dir="ltr">
+    <div class="max-w-5xl mx-auto px-6 flex justify-between items-center relative z-10">
+      <span class="text-purple-200 font-ar text-sm" dir="rtl">المعلم ماجد السويهري</span>
+      <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border-2 border-white/30 text-white font-black text-3xl font-brand">
+        12
+      </div>
     </div>
-  </div>
-  <div class="absolute right-24 bottom-2 text-8xl text-white/5 font-black">1</div>
-</footer>
+    <div class="absolute right-24 bottom-2 text-8xl text-white/5 font-black">1</div>
+  </footer>
 
-<script>
-  lucide.createIcons();
+  <script>
+    lucide.createIcons();
 
-    // Global State
+    // Application State
     let currentSpeed = 0.8;
     const speedSteps = [0.8, 1.0, 1.2];
     let selectedLocale = 'en-US'; 
-    let activeUtterance = null;
-    let isSpeaking = false;
+    let syncMode = 'writing'; // 'writing' or 'highlight'
+    let isWritingSoundEnabled = true;
     let currentActiveElement = null;
+    let lastSpokenText = "";
 
-    // Web Audio Synthesizer for feedback
+    // Web Audio Synthesizer (for soft pencil write sound + feedback)
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
     function playTone(type) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
       const now = audioCtx.currentTime;
-      
-      if (type === 'success') {
+
+      if (type === 'pencil' && isWritingSoundEnabled) {
+        // Soft pencil friction noise
+        const bufferSize = audioCtx.sampleRate * 0.04;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * 0.6;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(2600, now);
+        filter.Q.setValueAtTime(2.5, now);
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.03, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start(now);
+      } else if (type === 'success') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
         osc.type = 'sine';
         osc.frequency.setValueAtTime(523.25, now);
         osc.frequency.setValueAtTime(659.25, now + 0.1);
         osc.frequency.setValueAtTime(783.99, now + 0.2);
         gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-        osc.start(now); osc.stop(now + 0.45);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.start(now); osc.stop(now + 0.4);
       } else if (type === 'error') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(300, now);
-        osc.frequency.setValueAtTime(250, now + 0.1);
+        osc.frequency.setValueAtTime(240, now + 0.1);
         gain.gain.setValueAtTime(0.2, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
         osc.start(now); osc.stop(now + 0.3);
       } else if (type === 'click') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, now);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-        osc.start(now); osc.stop(now + 0.1);
+        osc.frequency.setValueAtTime(650, now);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.start(now); osc.stop(now + 0.08);
       }
     }
 
-    // Audio Controls
+    // Toggle Modes (Live Writing vs Highlighting)
+    function setSyncMode(mode) {
+      syncMode = mode;
+      const root = document.getElementById('bodyRoot');
+      const btnW = document.getElementById('btnModeWriting');
+      const btnH = document.getElementById('btnModeHighlight');
+
+      if (mode === 'writing') {
+        root.classList.remove('highlight-mode');
+        root.classList.add('writing-mode');
+        btnW.className = 'px-2.5 py-1 text-xs font-bold rounded-lg bg-brand-teal text-white flex items-center gap-1 transition';
+        btnH.className = 'px-2.5 py-1 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 flex items-center gap-1 transition';
+      } else {
+        root.classList.remove('writing-mode');
+        root.classList.add('highlight-mode');
+        btnH.className = 'px-2.5 py-1 text-xs font-bold rounded-lg bg-brand-teal text-white flex items-center gap-1 transition';
+        btnW.className = 'px-2.5 py-1 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 flex items-center gap-1 transition';
+      }
+      playTone('click');
+    }
+
+    function toggleWritingSound() {
+      isWritingSoundEnabled = !isWritingSoundEnabled;
+      const btn = document.getElementById('btnSoundFX');
+      btn.style.opacity = isWritingSoundEnabled ? '1' : '0.5';
+      playTone('click');
+    }
+
     function cycleSpeed() {
       const idx = speedSteps.indexOf(currentSpeed);
       currentSpeed = speedSteps[(idx + 1) % speedSteps.length];
@@ -482,6 +641,10 @@
 
     function onAccentChange() {
       selectedLocale = document.getElementById('accentSelect').value;
+      const tag = document.getElementById('activeVoiceTag');
+      if (selectedLocale === 'en-US') tag.textContent = '🇺🇸 صوت أمريكي هادئ';
+      if (selectedLocale === 'en-GB') tag.textContent = '🇬🇧 صوت بريطاني هادئ';
+      if (selectedLocale === 'en-CA') tag.textContent = '🇨🇦 صوت كندي هادئ';
       playTone('click');
     }
 
@@ -490,42 +653,30 @@
       if (!voices.length) return null;
       let matched = voices.filter(v => v.lang.replace('_', '-').toLowerCase().startsWith(locale.toLowerCase()));
       if (!matched.length) matched = voices.filter(v => v.lang.startsWith('en'));
-      return matched.find(v => v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Neural')) || matched[0] || voices[0];
+      return matched.find(v => v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Neural') || v.name.includes('Online')) || matched[0] || voices[0];
     }
 
     // ==========================================
-    // INLINE KARAOKE HIGHLIGHTING SYSTEM (مظلل)
+    // SYNCHRONIZED WRITING & KARAOKE ENGINE
     // ==========================================
-    
-    // 1. Prepare DOM elements to allow word-by-word highlighting without breaking HTML
+
     function buildKaraokeSpans(container) {
-      // First, unwrap any existing k-words if we are rebuilding
+      // Clean up previous spans
       container.querySelectorAll('.k-word').forEach(span => {
         const textNode = document.createTextNode(span.textContent);
         span.parentNode.replaceChild(textNode, span);
       });
       container.normalize();
 
-      // Clean up excess whitespace that confuses TTS engines
-      function cleanSpaces(node) {
-        if (node.nodeType === Node.TEXT_NODE) {
-          node.nodeValue = node.nodeValue.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ');
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-          Array.from(node.childNodes).forEach(cleanSpaces);
-        }
-      }
-      cleanSpaces(container);
-      
       let cumulativeIndex = 0;
 
       function processNode(node) {
         if (node.nodeType === Node.TEXT_NODE) {
           const text = node.nodeValue;
-          if (!text) return; 
-          
+          if (!text) return;
           const parts = text.split(/(\s+)/);
           const fragment = document.createDocumentFragment();
-          
+
           parts.forEach(part => {
             if (!part) return;
             if (part.trim().length > 0) {
@@ -545,32 +696,42 @@
           Array.from(node.childNodes).forEach(processNode);
         }
       }
-      
+
       Array.from(container.childNodes).forEach(processNode);
-      // Store exactly what the TTS engine will read to ensure perfect character matching
-      container.dataset.fullText = container.textContent;
+      container.dataset.fullText = container.textContent.trim().replace(/\s+/g, ' ');
     }
 
-    function prepareInlineKaraoke() {
-      const speakables = document.querySelectorAll('.speakable');
-      speakables.forEach(container => {
-        if (container.dataset.karaokeReady) return;
+    function prepareAllSpeakables() {
+      document.querySelectorAll('.speakable').forEach(container => {
         buildKaraokeSpans(container);
-        container.dataset.karaokeReady = 'true';
       });
     }
 
-    // Run preparation on load
-    window.addEventListener('DOMContentLoaded', () => {
-      prepareInlineKaraoke();
-      if (typeof speechSynthesis !== 'undefined') {
-        speechSynthesis.onvoiceschanged = () => getBestVoiceForLocale(selectedLocale);
-      }
-    });
+    // Setup Blackboard Live Sync Words
+    function setupBlackboardWords(spans) {
+      const board = document.getElementById('liveWrittenSentence');
+      board.innerHTML = '';
+      spans.forEach((span, idx) => {
+        const bSpan = document.createElement('span');
+        bSpan.className = 'transition-all duration-150 inline-block px-1 rounded text-slate-500 opacity-30';
+        bSpan.textContent = span.textContent;
+        bSpan.id = `bb-word-${idx}`;
+        board.appendChild(bSpan);
+      });
+    }
 
-    // 2. Play Audio and map highlighting
+    // Reset Elements
+    function resetElementHighlights(element) {
+      if (!element) return;
+      element.classList.remove('playing');
+      const spans = element.querySelectorAll('.k-word');
+      spans.forEach(s => {
+        s.classList.remove('writing-active', 'active', 'unwritten', 'written');
+      });
+    }
+
+    // Play and synchronize with live writing
     function playElementTTS(element) {
-      // Prevent triggering if clicking inside an input or interactive element
       if (event && (event.target.tagName === 'SELECT' || event.target.tagName === 'OPTION' || event.target.classList.contains('blank-dropzone'))) {
         return;
       }
@@ -578,76 +739,107 @@
       window.speechSynthesis.cancel();
       playTone('click');
 
-      // Reset previous highlights
       if (currentActiveElement) {
-        currentActiveElement.classList.remove('playing');
-        currentActiveElement.querySelectorAll('.k-word.active').forEach(w => w.classList.remove('active'));
+        resetElementHighlights(currentActiveElement);
       }
 
       currentActiveElement = element;
       element.classList.add('playing');
 
-      const textToSpeak = element.dataset.fullText;
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      const textToSpeak = element.dataset.fullText || element.textContent.trim().replace(/\s+/g, ' ');
+      lastSpokenText = textToSpeak;
       
+      const spans = Array.from(element.querySelectorAll('.k-word'));
+
+      // If in writing mode: initialize all words as unwritten
+      if (syncMode === 'writing') {
+        spans.forEach(s => s.classList.add('unwritten'));
+      }
+      setupBlackboardWords(spans);
+
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
       utterance.rate = currentSpeed;
       utterance.lang = selectedLocale;
       const voice = getBestVoiceForLocale(selectedLocale);
       if (voice) utterance.voice = voice;
 
-      // Pre-fetch all word spans for fast access during playback
-      const spans = Array.from(element.querySelectorAll('.k-word'));
-
-      // The Magic: onboundary fires precisely when the engine speaks a word
       utterance.onboundary = (e) => {
         if (e.name === 'word') {
           const charIndex = e.charIndex;
-          
-          // Clear all active highlights quickly
-          spans.forEach(s => s.classList.remove('active'));
 
-          // Find the exact span matching the character index
-          const activeSpan = spans.find(span => {
+          spans.forEach((span, idx) => {
             const start = parseInt(span.dataset.start, 10);
             const end = parseInt(span.dataset.end, 10);
-            // Inclusive matching ensures we catch the word even if the index is slightly off
-            return charIndex >= start && charIndex <= end; 
-          });
+            const isTarget = (charIndex >= start && charIndex <= end);
+            const bbWord = document.getElementById(`bb-word-${idx}`);
 
-          if (activeSpan) {
-            activeSpan.classList.add('active');
-          }
+            if (syncMode === 'writing') {
+              if (isTarget) {
+                span.classList.remove('unwritten');
+                span.classList.add('writing-active');
+                if (bbWord) {
+                  bbWord.className = 'font-bold text-teal-300 scale-110 bg-teal-900/60 px-1.5 py-0.5 rounded shadow-sm opacity-100 transition-all';
+                }
+                playTone('pencil');
+              } else if (charIndex > end) {
+                span.classList.remove('unwritten', 'writing-active');
+                span.classList.add('written');
+                if (bbWord) {
+                  bbWord.className = 'text-white opacity-100 px-1';
+                }
+              }
+            } else {
+              // Highlight mode
+              if (isTarget) {
+                span.classList.add('active');
+                if (bbWord) {
+                  bbWord.className = 'font-bold text-yellow-300 scale-105 bg-yellow-900/50 px-1 rounded opacity-100';
+                }
+              } else {
+                span.classList.remove('active');
+                if (bbWord && charIndex > end) {
+                  bbWord.className = 'text-slate-300 opacity-90 px-1';
+                }
+              }
+            }
+          });
         }
       };
 
       utterance.onend = () => {
-        isSpeaking = false;
         element.classList.remove('playing');
-        element.querySelectorAll('.k-word.active').forEach(w => w.classList.remove('active'));
+        spans.forEach((s, idx) => {
+          s.classList.remove('writing-active', 'active', 'unwritten');
+          s.classList.add('written');
+          const bbWord = document.getElementById(`bb-word-${idx}`);
+          if (bbWord) bbWord.className = 'text-white opacity-100 px-1';
+        });
       };
 
       utterance.onerror = () => {
-        element.classList.remove('playing');
-        element.querySelectorAll('.k-word.active').forEach(w => w.classList.remove('active'));
+        resetElementHighlights(element);
       };
 
       window.speechSynthesis.speak(utterance);
     }
 
-    function stopAllSpeech() {
-      window.speechSynthesis.cancel();
+    function replayCurrentSentence() {
       if (currentActiveElement) {
-        currentActiveElement.classList.remove('playing');
-        currentActiveElement.querySelectorAll('.k-word.active').forEach(w => w.classList.remove('active'));
+        playElementTTS(currentActiveElement);
       }
     }
 
+    function stopAllSpeech() {
+      window.speechSynthesis.cancel();
+      if (currentActiveElement) {
+        resetElementHighlights(currentActiveElement);
+      }
+    }
 
     // ==========================================
-    // ACTIVITY LOGIC
+    // EXERCISE LOGIC (MATCHING & BLANKS)
     // ==========================================
 
-    // Activity 2: Match Checking
     function checkMatch() {
       const c1 = document.getElementById('carter1');
       const c2 = document.getElementById('carter2');
@@ -657,15 +849,12 @@
       const carterAnswers = [c1.value, c2.value].sort();
       const auroraAnswers = [a1.value, a2.value].sort();
 
-      // Correct Logic: 
-      // Carter: b, d
-      // Aurora: a, c
       const carterCorrect = (carterAnswers[0] === 'b' && carterAnswers[1] === 'd');
       const auroraCorrect = (auroraAnswers[0] === 'a' && auroraAnswers[1] === 'c');
 
       function styleSelect(el, isCorrect) {
         el.classList.remove('correct', 'incorrect');
-        if(el.value) el.classList.add(isCorrect ? 'correct' : 'incorrect');
+        if (el.value) el.classList.add(isCorrect ? 'correct' : 'incorrect');
       }
 
       styleSelect(c1, carterAnswers.includes(c1.value) && ['b','d'].includes(c1.value));
@@ -675,53 +864,43 @@
 
       if (carterCorrect && auroraCorrect) {
         playTone('success');
-        confetti({ particleCount: 60, spread: 60, origin: { y: 0.5 } });
+        confetti({ particleCount: 70, spread: 65, origin: { y: 0.5 } });
       } else {
         playTone('error');
       }
     }
 
-
-    // Activity 3: Fill in the blanks (Click to select pill, click to place)
+    // Activity 3: Fill in blanks
     let selectedPillElement = null;
 
     function selectPill(element) {
-      if(element.classList.contains('used')) return;
+      if (element.classList.contains('used')) return;
       playTone('click');
-      
-      // Deselect others
       document.querySelectorAll('.word-pill').forEach(p => p.classList.remove('selected'));
-      
       selectedPillElement = element;
       element.classList.add('selected');
     }
 
     function fillBlank(dropzone, event) {
-      event.stopPropagation(); // Stop TTS from triggering when placing word
+      event.stopPropagation();
       if (!selectedPillElement) return;
 
       playTone('click');
       const word = selectedPillElement.dataset.word;
       
-      // Clear previous word if exists (and reactivate its pill)
       if (dropzone.textContent) {
         const prevWord = dropzone.textContent;
         document.querySelectorAll(`.word-pill[data-word="${prevWord}"]`).forEach(p => p.classList.remove('used'));
       }
 
-      // Place new word
       dropzone.textContent = word;
-      
-      // Mark pill as used and deselect
       selectedPillElement.classList.add('used');
       selectedPillElement.classList.remove('selected');
       selectedPillElement = null;
 
-      // Remove validation styling on change
       dropzone.style.color = '';
       dropzone.style.borderColor = '';
 
-      // Rebuild the karaoke spans so the newly inserted text syncs accurately!
       const parentSpeakable = dropzone.closest('.speakable');
       if (parentSpeakable) {
         buildKaraokeSpans(parentSpeakable);
@@ -730,7 +909,6 @@
 
     function checkBlanks() {
       const dropzones = document.querySelectorAll('.blank-dropzone');
-      let allCorrect = true;
       let count = 0;
 
       dropzones.forEach(zone => {
@@ -738,13 +916,12 @@
         const current = zone.textContent;
 
         if (current === answer) {
-          zone.style.color = '#047857'; // emerald-700
-          zone.style.borderColor = '#10b981'; // emerald-500
+          zone.style.color = '#047857';
+          zone.style.borderColor = '#10b981';
           count++;
         } else {
-          zone.style.color = '#be123c'; // rose-700
-          zone.style.borderColor = '#f43f5e'; // rose-500
-          allCorrect = false;
+          zone.style.color = '#be123c';
+          zone.style.borderColor = '#f43f5e';
         }
       });
 
@@ -755,6 +932,47 @@
         playTone('error');
       }
     }
+
+    // Dictation Test Practice
+    function toggleDictationBox() {
+      const box = document.getElementById('dictationContainer');
+      box.classList.toggle('hidden');
+      if (!box.classList.contains('hidden')) {
+        document.getElementById('dictationInput').focus();
+      }
+      playTone('click');
+    }
+
+    function checkDictation() {
+      const input = document.getElementById('dictationInput').value.trim().toLowerCase().replace(/[.,?!]/g, '');
+      const cleanTarget = lastSpokenText.trim().toLowerCase().replace(/[.,?!]/g, '');
+      const feedback = document.getElementById('dictationFeedback');
+
+      if (!cleanTarget) {
+        feedback.textContent = 'يرجى الاستماع لأي جملة أولاً ثم كتابتها!';
+        feedback.className = 'text-xs mt-1.5 font-bold text-amber-400';
+        return;
+      }
+
+      if (input === cleanTarget) {
+        feedback.textContent = '🎉 أحسنت صنعاً! كتابة إملائية صحيحة بنسبة 100%';
+        feedback.className = 'text-xs mt-1.5 font-bold text-emerald-400';
+        playTone('success');
+        confetti({ particleCount: 50, spread: 50, origin: { y: 0.9 } });
+      } else {
+        feedback.textContent = 'حاول مرة أخرى! انتبه للهجاء والمسافات.';
+        feedback.className = 'text-xs mt-1.5 font-bold text-rose-400';
+        playTone('error');
+      }
+    }
+
+    // Boot
+    window.addEventListener('DOMContentLoaded', () => {
+      prepareAllSpeakables();
+      if (typeof speechSynthesis !== 'undefined') {
+        speechSynthesis.onvoiceschanged = () => getBestVoiceForLocale(selectedLocale);
+      }
+    });
 
   </script>
 </body>
